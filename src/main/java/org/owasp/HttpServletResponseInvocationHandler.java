@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-package org.wasp;
+package org.owasp;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;

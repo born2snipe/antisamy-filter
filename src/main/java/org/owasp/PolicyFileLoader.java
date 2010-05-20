@@ -11,18 +11,20 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-package org.wasp;
+package org.owasp;
 
-import javax.servlet.http.HttpServletResponse;
-import java.lang.reflect.Proxy;
+import org.owasp.validator.html.Policy;
+import org.owasp.validator.html.PolicyException;
+
+import java.io.File;
 
 
-public class HttpResponseProxyFactory {
-    public HttpServletResponse build(HttpServletResponseInvocationHandler invocationHandler) {
-        return (HttpServletResponse) Proxy.newProxyInstance(
-                Thread.currentThread().getContextClassLoader(),
-                new Class[]{HttpServletResponse.class},
-                invocationHandler
-        );
+public class PolicyFileLoader {
+    public Policy load(String fileLocation) {
+        try {
+            return Policy.getInstance(new File(fileLocation));
+        } catch (PolicyException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

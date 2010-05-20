@@ -1,0 +1,13 @@
+== How to use?
+Define the following in your web.xml
+
+    <filter>
+        <filter-name>antisamy-filter</filter-name>
+        <filter-class>org.owas.AntiSamyFilter</filter-class>
+        <init-param>
+            <param-name>antisamy-policy-file</param-name>
+            <param-value>c:/directory/policy.xml</param-value>
+        </init-param>
+    </filter>
+
+    
