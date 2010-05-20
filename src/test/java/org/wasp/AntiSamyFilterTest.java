@@ -3,6 +3,7 @@ package org.wasp;
 import org.apache.commons.logging.Log;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.owasp.validator.html.AntiSamy;
 import org.owasp.validator.html.CleanResults;
 import org.owasp.validator.html.PolicyException;
@@ -70,11 +71,14 @@ public class AntiSamyFilterTest {
 
     @Test
     public void test_doFilter() throws Exception {
+        InOrder inOrder = inOrder(filterChain, antiSamy);
+
         when(antiSamy.scan(TAINTED_HTML)).thenReturn(cleanResults);
 
         filter.doFilter(request, response, filterChain);
 
-        verify(filterChain).doFilter(request, proxyResponse);
+        inOrder.verify(filterChain).doFilter(request, proxyResponse);
+        inOrder.verify(antiSamy).scan(TAINTED_HTML);
         assertEquals(CLEANED_HTML, new String(outputStream.output.toByteArray()));
     }
 
@@ -98,8 +102,8 @@ public class AntiSamyFilterTest {
         filter.setHttpResponseProxyFactory(httpResponseProxyFactory);
         filter.setLog(log);
 
-        when(httpResponseInvocationHandlerFactory.build()).thenReturn(invocationHandler);
-        when(httpResponseProxyFactory.build(response, invocationHandler)).thenReturn(proxyResponse);
+        when(httpResponseInvocationHandlerFactory.build(response)).thenReturn(invocationHandler);
+        when(httpResponseProxyFactory.build(invocationHandler)).thenReturn(proxyResponse);
         when(invocationHandler.getContents()).thenReturn(TAINTED_HTML);
         when(response.getOutputStream()).thenReturn(outputStream);
         when(cleanResults.getCleanHTML()).thenReturn(CLEANED_HTML);

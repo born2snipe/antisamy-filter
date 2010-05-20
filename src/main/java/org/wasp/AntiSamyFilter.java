@@ -32,8 +32,8 @@ public class AntiSamyFilter implements Filter {
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (response instanceof HttpServletResponse) {
-            HttpServletResponseInvocationHandler invocationHandler = httpResponseInvocationHandlerFactory.build();
-            HttpServletResponse proxiedResponse = httpResponseProxyFactory.build((HttpServletResponse) response, invocationHandler);
+            HttpServletResponseInvocationHandler invocationHandler = httpResponseInvocationHandlerFactory.build((HttpServletResponse) response);
+            HttpServletResponse proxiedResponse = httpResponseProxyFactory.build(invocationHandler);
             chain.doFilter(request, proxiedResponse);
 
             try {
