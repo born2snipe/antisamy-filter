@@ -48,7 +48,53 @@
                     <target>1.5</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.mycila.maven-license-plugin</groupId>
+                <artifactId>maven-license-plugin</artifactId>
+                <version>1.5.0</version>
+                <configuration>
+                    <basedir>${basedir}</basedir>
+                    <header>${basedir}/LICENSE.txt</header>
+                    <quiet>false</quiet>
+                    <failIfMissing>true</failIfMissing>
+                    <aggregate>false</aggregate>
+                    <includes>
+                        <include>src/**</include>
+                        <include>**/test/**</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/test/resources/**</exclude>
+                    </excludes>
+                    <useDefaultExcludes>true</useDefaultExcludes>
+                    <useDefaultMapping>true</useDefaultMapping>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <pluginRepositories>
+
+        <pluginRepository>
+            <id>mc-release</id>
+            <name>Local Maven repository of releases</name>
+            <url>http://mc-repo.googlecode.com/svn/maven2/releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </pluginRepository>
+
+    </pluginRepositories>
 
 </project>
