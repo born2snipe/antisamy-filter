@@ -4,20 +4,16 @@ import org.apache.commons.logging.Log;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.owasp.validator.html.AntiSamy;
-import org.owasp.validator.html.CleanResults;
-import org.owasp.validator.html.PolicyException;
-import org.owasp.validator.html.ScanException;
+import org.owasp.validator.html.*;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.fail;
 import static org.mockito.Mockito.*;
 
 public class AntiSamyFilterTest {
@@ -36,6 +32,38 @@ public class AntiSamyFilterTest {
     private CleanResults cleanResults;
     private StubOutputStream outputStream;
     private Log log;
+    private FilterConfig filterConfig;
+    private PolicyFileLoader policyFileLoader;
+    private Policy policy;
+    private static final String POLICY_FILE = "policyFile";
+
+    @Test
+    public void test_init_paramIsEmptyString() throws ServletException {
+        when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn("");
+        try {
+            filter.init(filterConfig);
+            fail();
+        } catch (IllegalStateException err) {
+            assertEquals("A policy file is required. Please set the init parameter (antisamy-policy-file) in your web.xml or call the setter", err.getMessage());
+        }
+    }
+
+    @Test
+    public void test_init_paramIsNull() throws ServletException {
+        try {
+            filter.init(filterConfig);
+            fail();
+        } catch (IllegalStateException err) {
+            assertEquals("A policy file is required. Please set the init parameter (antisamy-policy-file) in your web.xml or call the setter", err.getMessage());
+        }
+    }
+
+    @Test
+    public void test_init() throws ServletException {
+        when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn(POLICY_FILE);
+
+        filter.init(filterConfig);
+    }
 
     @Test
     public void test_doFilter_NonHttpRequest() throws Exception {
@@ -51,7 +79,7 @@ public class AntiSamyFilterTest {
     public void test_doFilter_antiSamy_ThrowsScanException() throws Exception {
         ScanException error = new ScanException("");
 
-        when(antiSamy.scan(TAINTED_HTML)).thenThrow(error);
+        when(antiSamy.scan(TAINTED_HTML, policy)).thenThrow(error);
 
         filter.doFilter(request, response, filterChain);
 
@@ -62,7 +90,7 @@ public class AntiSamyFilterTest {
     public void test_doFilter_antiSamy_ThrowsPolicyException() throws Exception {
         PolicyException error = new PolicyException("");
 
-        when(antiSamy.scan(TAINTED_HTML)).thenThrow(error);
+        when(antiSamy.scan(TAINTED_HTML, policy)).thenThrow(error);
 
         filter.doFilter(request, response, filterChain);
 
@@ -73,12 +101,12 @@ public class AntiSamyFilterTest {
     public void test_doFilter() throws Exception {
         InOrder inOrder = inOrder(filterChain, antiSamy);
 
-        when(antiSamy.scan(TAINTED_HTML)).thenReturn(cleanResults);
+        when(antiSamy.scan(TAINTED_HTML, policy)).thenReturn(cleanResults);
 
         filter.doFilter(request, response, filterChain);
 
         inOrder.verify(filterChain).doFilter(request, proxyResponse);
-        inOrder.verify(antiSamy).scan(TAINTED_HTML);
+        inOrder.verify(antiSamy).scan(TAINTED_HTML, policy);
         assertEquals(CLEANED_HTML, new String(outputStream.output.toByteArray()));
     }
 
@@ -95,18 +123,24 @@ public class AntiSamyFilterTest {
         cleanResults = mock(CleanResults.class);
         outputStream = new StubOutputStream();
         log = mock(Log.class);
+        policyFileLoader = mock(PolicyFileLoader.class);
+        policy = mock(Policy.class);
+        filterConfig = mock(FilterConfig.class);
 
         filter = new AntiSamyFilter();
         filter.setAntiSamy(antiSamy);
         filter.setHttpResponseInvocationHandlerFactory(httpResponseInvocationHandlerFactory);
         filter.setHttpResponseProxyFactory(httpResponseProxyFactory);
         filter.setLog(log);
+        filter.setPolicyFileLoader(policyFileLoader);
+        filter.setPolicyFile(POLICY_FILE);
 
         when(httpResponseInvocationHandlerFactory.build(response)).thenReturn(invocationHandler);
         when(httpResponseProxyFactory.build(invocationHandler)).thenReturn(proxyResponse);
         when(invocationHandler.getContents()).thenReturn(TAINTED_HTML);
         when(response.getOutputStream()).thenReturn(outputStream);
         when(cleanResults.getCleanHTML()).thenReturn(CLEANED_HTML);
+        when(policyFileLoader.load(POLICY_FILE)).thenReturn(policy);
     }
 
     private static class StubOutputStream extends ServletOutputStream {
