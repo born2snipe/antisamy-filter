@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.owasp.validator.html.*;
+import org.owasp.validator.html.scan.AntiSamyDOMScanner;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public class AntiSamyFilterTest {
     private static final String POLICY_FILE = "policyFile";
 
     @Test
-    public void test_init_paramIsEmptyString() throws ServletException {
+    public void test_init_policyParamIsEmptyString() throws ServletException {
         when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn("");
         try {
             filter.init(filterConfig);
@@ -50,6 +51,8 @@ public class AntiSamyFilterTest {
 
     @Test
     public void test_init_paramIsNull() throws ServletException {
+        when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn(null);
+
         try {
             filter.init(filterConfig);
             fail();
@@ -63,6 +66,29 @@ public class AntiSamyFilterTest {
         when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn(POLICY_FILE);
 
         filter.init(filterConfig);
+
+        assertEquals("UTF-8", filter.getOutputEncoding());
+        assertEquals("UTF-8", filter.getInputEncoding());
+    }
+
+    @Test
+    public void test_init_specificOutputEncoding() throws ServletException {
+        when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn(POLICY_FILE);
+        when(filterConfig.getInitParameter("antisamy-output-encoding")).thenReturn("output");
+
+        filter.init(filterConfig);
+
+        assertEquals("output", filter.getOutputEncoding());
+    }
+
+    @Test
+    public void test_init_specificInputEncoding() throws ServletException {
+        when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn(POLICY_FILE);
+        when(filterConfig.getInitParameter("antisamy-input-encoding")).thenReturn("input");
+
+        filter.init(filterConfig);
+
+        assertEquals("input", filter.getInputEncoding());
     }
 
     @Test
@@ -101,13 +127,39 @@ public class AntiSamyFilterTest {
     public void test_doFilter() throws Exception {
         InOrder inOrder = inOrder(filterChain, antiSamy);
 
-        when(antiSamy.scan(TAINTED_HTML, policy)).thenReturn(cleanResults);
-
         filter.doFilter(request, response, filterChain);
 
         inOrder.verify(filterChain).doFilter(request, proxyResponse);
+        inOrder.verify(antiSamy).setInputEncoding(AntiSamyDOMScanner.DEFAULT_ENCODING_ALGORITHM);
+        inOrder.verify(antiSamy).setOutputEncoding(AntiSamyDOMScanner.DEFAULT_ENCODING_ALGORITHM);
         inOrder.verify(antiSamy).scan(TAINTED_HTML, policy);
         assertEquals(CLEANED_HTML, new String(outputStream.output.toByteArray()));
+    }
+
+    @Test
+    public void test_doFilter_specificOutputEncoding() throws Exception {
+        InOrder inOrder = inOrder(antiSamy);
+
+        filter.setOutputEncoding("output");
+
+        filter.doFilter(request, response, filterChain);
+
+        inOrder.verify(antiSamy).setInputEncoding(AntiSamyDOMScanner.DEFAULT_ENCODING_ALGORITHM);
+        inOrder.verify(antiSamy).setOutputEncoding("output");
+        inOrder.verify(antiSamy).scan(TAINTED_HTML, policy);
+    }
+
+    @Test
+    public void test_doFilter_specificInputEncoding() throws Exception {
+        InOrder inOrder = inOrder(antiSamy);
+
+        filter.setInputEncoding("input");
+
+        filter.doFilter(request, response, filterChain);
+
+        inOrder.verify(antiSamy).setInputEncoding("input");
+        inOrder.verify(antiSamy).setOutputEncoding(AntiSamyDOMScanner.DEFAULT_ENCODING_ALGORITHM);
+        inOrder.verify(antiSamy).scan(TAINTED_HTML, policy);
     }
 
     @Before
@@ -141,6 +193,7 @@ public class AntiSamyFilterTest {
         when(response.getOutputStream()).thenReturn(outputStream);
         when(cleanResults.getCleanHTML()).thenReturn(CLEANED_HTML);
         when(policyFileLoader.load(POLICY_FILE)).thenReturn(policy);
+        when(antiSamy.scan(TAINTED_HTML, policy)).thenReturn(cleanResults);
     }
 
     private static class StubOutputStream extends ServletOutputStream {
