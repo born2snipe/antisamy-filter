@@ -109,6 +109,17 @@ public class AntiSamyFilterTest {
     }
 
     @Test
+    public void test_doFilter_NotHtml() throws Exception {
+        when(invocationHandler.getBytes()).thenReturn(new String("test").getBytes());
+        when(proxyResponse.getContentType()).thenReturn("application/pdf");
+
+        filter.doFilter(request, response, filterChain);
+
+        verifyZeroInteractions(antiSamy);
+        assertEquals("test", new String(outputStream.output.toByteArray()));
+    }
+
+    @Test
     public void test_doFilter_NonHttpRequest() throws Exception {
         ServletResponse response = mock(ServletResponse.class);
 
@@ -211,6 +222,7 @@ public class AntiSamyFilterTest {
         when(cleanResults.getCleanHTML()).thenReturn(CLEANED_HTML);
         when(policyFileLoader.load(POLICY_FILE)).thenReturn(policy);
         when(antiSamy.scan(TAINTED_HTML, policy)).thenReturn(cleanResults);
+        when(proxyResponse.getContentType()).thenReturn("text/html");
     }
 
     private static class StubOutputStream extends ServletOutputStream {

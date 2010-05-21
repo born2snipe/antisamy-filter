@@ -71,26 +71,29 @@ public class AntiSamyFilter implements Filter {
             HttpServletResponseInvocationHandler invocationHandler = httpResponseInvocationHandlerFactory.build((HttpServletResponse) response);
             HttpServletResponse proxiedResponse = httpResponseProxyFactory.build(invocationHandler);
             chain.doFilter(request, proxiedResponse);
-
-            try {
-                Policy policy = policyFileLoader.load(policyFile);
-                antiSamy.setInputEncoding(inputEncoding);
-                antiSamy.setOutputEncoding(outputEncoding);
-                CleanResults cleanResults = antiSamy.scan(invocationHandler.getContents(), policy);
-                log.info("Number of Errors: " + cleanResults.getNumberOfErrors());
-                if (log.isDebugEnabled()) {
-                    log.debug("Errors found: ");
-                    List errors = cleanResults.getErrorMessages();
-                    for (int i = 0; i < errors.size(); i++) {
-                        log.debug("\t" + (i + 1) + ". " + errors.get(i));
+            if ("text/html".equals(proxiedResponse.getContentType())) {
+                try {
+                    Policy policy = policyFileLoader.load(policyFile);
+                    antiSamy.setInputEncoding(inputEncoding);
+                    antiSamy.setOutputEncoding(outputEncoding);
+                    CleanResults cleanResults = antiSamy.scan(invocationHandler.getContents(), policy);
+                    log.info("Number of Errors: " + cleanResults.getNumberOfErrors());
+                    if (log.isDebugEnabled()) {
+                        log.debug("Errors found: ");
+                        List errors = cleanResults.getErrorMessages();
+                        for (int i = 0; i < errors.size(); i++) {
+                            log.debug("\t" + (i + 1) + ". " + errors.get(i));
+                        }
                     }
+                    log.info("Scan time (in seconds): " + cleanResults.getScanTime());
+                    response.getOutputStream().write(cleanResults.getCleanHTML().getBytes());
+                } catch (ScanException e) {
+                    log.error(GENERIC_ERROR, e);
+                } catch (PolicyException e) {
+                    log.error(GENERIC_ERROR, e);
                 }
-                log.info("Scan time (in seconds): " + cleanResults.getScanTime());
-                response.getOutputStream().write(cleanResults.getCleanHTML().getBytes());
-            } catch (ScanException e) {
-                log.error(GENERIC_ERROR, e);
-            } catch (PolicyException e) {
-                log.error(GENERIC_ERROR, e);
+            } else {
+                response.getOutputStream().write(invocationHandler.getBytes());
             }
         } else {
             chain.doFilter(request, response);

@@ -49,4 +49,7 @@ public class HttpServletResponseInvocationHandler implements InvocationHandler {
         return new String(output.toByteArray());
     }
 
+    public byte[] getBytes() {
+        return output.toByteArray();
+    }
 }
