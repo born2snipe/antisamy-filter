@@ -14,18 +14,24 @@
 
 package org.owasp;
 
-import org.owasp.validator.html.Policy;
-import org.owasp.validator.html.PolicyException;
-
-import java.io.File;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 
 
-public class PolicyFileLoader {
-    public Policy load(String fileLocation) {
-        try {
-            return Policy.getInstance(new File(fileLocation));
-        } catch (PolicyException e) {
-            throw new RuntimeException(e);
-        }
+public class EagerFlushingPrintWriter extends PrintWriter {
+    public EagerFlushingPrintWriter(OutputStream out) {
+        super(out);
+    }
+
+    @Override
+    public void write(String s, int off, int len) {
+        super.write(s, off, len);
+        flush();
+    }
+
+    @Override
+    public void write(char cbuf[], int off, int len) {
+        super.write(cbuf, off, len);
+        flush();
     }
 }

@@ -14,18 +14,33 @@
 
 package org.owasp;
 
-import org.owasp.validator.html.Policy;
-import org.owasp.validator.html.PolicyException;
+import org.junit.Before;
+import org.junit.Test;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
+
+import static junit.framework.Assert.assertEquals;
 
 
-public class PolicyFileLoader {
-    public Policy load(String fileLocation) {
-        try {
-            return Policy.getInstance(new File(fileLocation));
-        } catch (PolicyException e) {
-            throw new RuntimeException(e);
-        }
+public class EagerFlushingPrintWriterTest {
+    private ByteArrayOutputStream out;
+    private EagerFlushingPrintWriter writer;
+
+    @Test
+    public void test_write_withString() {
+        writer.write("test");
+        assertEquals("test", new String(out.toByteArray()));
+    }
+
+    @Test
+    public void test_write_withCharacters() {
+        writer.write(new char[]{'A'}, 0, 1);
+        assertEquals("A", new String(out.toByteArray()));
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        out = new ByteArrayOutputStream();
+        writer = new EagerFlushingPrintWriter(out);
     }
 }
