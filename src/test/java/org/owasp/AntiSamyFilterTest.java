@@ -77,12 +77,15 @@ public class AntiSamyFilterTest {
 
     @Test
     public void test_init() throws ServletException {
+        filter.setPolicyFile(null);
+
         when(filterConfig.getInitParameter("antisamy-policy-file")).thenReturn(POLICY_FILE);
 
         filter.init(filterConfig);
 
         assertEquals("UTF-8", filter.getOutputEncoding());
         assertEquals("UTF-8", filter.getInputEncoding());
+        assertEquals(POLICY_FILE, filter.getPolicyFile());
     }
 
     @Test

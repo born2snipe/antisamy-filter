@@ -50,8 +50,8 @@ public class AntiSamyFilter implements Filter {
     }
 
     public void init(FilterConfig filterConfig) throws ServletException {
-        String policyFileLocation = filterConfig.getInitParameter(POLICY_FILE_PARAM);
-        if (isBlank(policyFileLocation)) {
+        policyFile = filterConfig.getInitParameter(POLICY_FILE_PARAM);
+        if (isBlank(policyFile)) {
             throw new IllegalStateException(MessageFormat.format(NO_POLICY_FILE, POLICY_FILE_PARAM));
         }
 
@@ -143,5 +143,9 @@ public class AntiSamyFilter implements Filter {
 
     public String getOutputEncoding() {
         return outputEncoding;
+    }
+
+    public String getPolicyFile() {
+        return policyFile;
     }
 }
